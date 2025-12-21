@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using HR.LeaveManagement.Application.Contracts.ILogging;
 using HR.LeaveManagement.Application.Exceptions;
 using MediatR;
 
@@ -8,11 +9,13 @@ namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeave
     {
         private readonly IMapper _mapper;
         private readonly ILeaveTypeRepository _leaveTypeRepository;
+        private readonly IAppLogger<CreateLeaveTypeCommandHandler> _ILogger;
 
-        public CreateLeaveTypeCommandHandler(IMapper mapper, ILeaveTypeRepository leaveTypeRepository)
+        public CreateLeaveTypeCommandHandler(IMapper mapper, ILeaveTypeRepository leaveTypeRepository, IAppLogger<CreateLeaveTypeCommandHandler> ILooger)
         {
             this._mapper = mapper;
             this._leaveTypeRepository = leaveTypeRepository;
+            this._ILogger = ILooger;
         }
 
         public async Task<int> Handle(CreateLeaveTypeCommand request, CancellationToken cancellationToken)
@@ -23,6 +26,7 @@ namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeave
             if (!validationResult.IsValid)
             {
                 // handle validation errors
+                _ILogger.LogWarning("Validation errors occurred while creating a new leave type.");
                 throw new BadRequestException("Invalid Type", validationResult);
             }
 
@@ -30,10 +34,14 @@ namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeave
             var leaveType = _mapper.Map<HRLeaveManegent.Domin.LeaveType>(request);
 
             // add to database 
-            var response = await _leaveTypeRepository.AddAsync(leaveType);
+            _ILogger.LogInformation("Creating a new leave type");
+            await _leaveTypeRepository.AddAsync(leaveType);
+
 
             // return record id
-            return response.Id;
+
+            _ILogger.LogInformation($"Leave type {leaveType.Id} created successfully.");
+            return leaveType.Id;
         }
     }
 }
