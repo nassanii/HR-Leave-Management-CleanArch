@@ -32,9 +32,12 @@ const Login = () => {
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-md">
-            <div className="mb-10">
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
-                <p className="mt-2 text-gray-500">Please enter your details to sign in.</p>
+            <div className="mb-10 text-center">
+                <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-indigo-600">
+                    <Mail size={32} />
+                </div>
+                <h1 className="text-3xl font-bold text-slate-900">HR Portal</h1>
+                <p className="mt-3 text-slate-500">Sign in to manage your leave requests</p>
             </div>
 
             <form onSubmit={onSubmit}>
@@ -74,7 +77,7 @@ const Login = () => {
                 </div>
 
                 <button className="group w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all active:scale-[0.98]">
-                    Sign in
+                    Access Dashboard
                     <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                 </button>
             </form>

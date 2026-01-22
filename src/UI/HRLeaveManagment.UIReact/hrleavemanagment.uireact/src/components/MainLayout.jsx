@@ -1,19 +1,37 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import TopHeader from './TopHeader';
-import { HelpCircle, X, ExternalLink } from 'lucide-react';
+import { HelpCircle, X, ExternalLink, Menu, Mail } from 'lucide-react';
 
 const MainLayout = ({ children }) => {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
+    const location = useLocation();
 
     return (
         <div className="h-screen bg-gray-50 flex overflow-hidden relative">
-            {/* Sidebar (Desktop) */}
-            <Sidebar />
+            {/* Sidebar (Responsive) */}
+            <Sidebar
+                isOpen={isMobileSidebarOpen}
+                onClose={() => setIsMobileSidebarOpen(false)}
+            />
 
             <div className="flex-1 flex flex-col min-w-0">
-                <TopHeader toggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} />
+                {/* Mobile Header */}
+                <header className="md:hidden bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                            <Mail size={18} />
+                        </div>
+                        <span className="font-bold text-xl text-gray-900 tracking-tight">HR Portal</span>
+                    </div>
+                    <button
+                        onClick={() => setIsMobileSidebarOpen(true)}
+                        className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <Menu size={24} />
+                    </button>
+                </header>
 
                 <main className="flex-grow p-4 sm:p-6 lg:p-8 overflow-y-auto">
                     <div className="w-full max-w-full mx-auto">

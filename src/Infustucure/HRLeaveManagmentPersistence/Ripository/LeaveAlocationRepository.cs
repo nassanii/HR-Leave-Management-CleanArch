@@ -55,5 +55,12 @@ public class LeaveAlocationRepository : GenericRepository<LeaveAllocation>, ILea
         return _db.LeaveAllocations
             .FirstOrDefaultAsync(q => q.EmployeeId == employeeId && q.leaveTypeId == leaveTypeId);
     }
+
+    public async Task DeleteAllocations(string employeeId)
+    {
+        var allocations = await _db.LeaveAllocations.Where(q => q.EmployeeId == employeeId).ToListAsync();
+        _db.LeaveAllocations.RemoveRange(allocations);
+        await _db.SaveChangesAsync();
+    }
 }
 

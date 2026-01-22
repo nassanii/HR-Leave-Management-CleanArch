@@ -36,5 +36,14 @@ public class LeaveRequestRepository : GenericRepository<LeaveRequest>, ILeaveReq
             .FirstOrDefaultAsync(lr => lr.Id == id);
         return leaveRequest;
     }
+
+    public async Task DeleteRequests(string employeeId)
+    {
+        var requests = await _db.LeaveRequests
+            .Where(q => q.RequestingEmployeeId == employeeId)
+            .ToListAsync();
+        _db.LeaveRequests.RemoveRange(requests);
+        await _db.SaveChangesAsync();
+    }
 }
 

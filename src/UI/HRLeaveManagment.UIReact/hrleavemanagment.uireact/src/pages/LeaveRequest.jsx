@@ -14,7 +14,8 @@ import {
     Eye,
     XCircle,
     ChevronRight,
-    Filter
+    Filter,
+    Trash2
 } from 'lucide-react';
 
 import LeaveRequestService from '../services/LeaveRequestService';
@@ -39,7 +40,10 @@ const LeaveRequest = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentRequest, setCurrentRequest] = useState(null); // For viewing/editing
     const [isCanceling, setIsCanceling] = useState(null); // ID of request being canceled
+    const [isDeleting, setIsDeleting] = useState(null); // ID of request being deleted
     const [isCreating, setIsCreating] = useState(false); // Mode: true = Create New, false = View/Edit
+    const [selectedRequests, setSelectedRequests] = useState([]); // For bulk delete
+    const [isDeletetingBulk, setIsDeletingBulk] = useState(false); // Bulk delete confirmation
 
     // Initialize Data
     useEffect(() => {
@@ -130,6 +134,47 @@ const LeaveRequest = () => {
         }
     };
 
+    const handleDelete = async (id) => {
+        try {
+            await LeaveRequestService.deleteLeaveRequest(id);
+            setRequests(prev => prev.filter(r => r.id !== id));
+            setIsDeleting(null);
+            showNotification('Request deleted successfully');
+        } catch (error) {
+            console.error(error);
+            const errorMessage = error.response?.data?.detail || error.response?.data?.title || error.message || 'Failed to delete request';
+            showNotification(errorMessage, 'error');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        try {
+            await Promise.all(selectedRequests.map(id => LeaveRequestService.deleteLeaveRequest(id)));
+            setRequests(prev => prev.filter(r => !selectedRequests.includes(r.id)));
+            setSelectedRequests([]);
+            setIsDeletingBulk(false);
+            showNotification(`Successfully deleted ${selectedRequests.length} request(s)`);
+        } catch (error) {
+            console.error(error);
+            const errorMessage = error.response?.data?.detail || error.response?.data?.title || error.message || 'Failed to delete requests';
+            showNotification(errorMessage, 'error');
+        }
+    };
+
+    const toggleSelectRequest = (id) => {
+        setSelectedRequests(prev =>
+            prev.includes(id) ? prev.filter(reqId => reqId !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedRequests.length === filteredData.length) {
+            setSelectedRequests([]);
+        } else {
+            setSelectedRequests(filteredData.map(r => r.id));
+        }
+    };
+
     const handleApproval = async (id, approved) => {
         try {
             await LeaveRequestService.changeApprovalStatus(id, approved);
@@ -182,13 +227,24 @@ const LeaveRequest = () => {
                     <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Leave Requests</h1>
                     <p className="text-slate-500 mt-1">Manage and track employee leave requests.</p>
                 </div>
-                <button
-                    onClick={openCreateModal}
-                    className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-100 transition-all active:scale-95 w-full sm:w-auto"
-                >
-                    <Plus size={20} />
-                    Create Request
-                </button>
+                <div className="flex gap-3 w-full sm:w-auto">
+                    {isAdmin && selectedRequests.length > 0 && (
+                        <button
+                            onClick={() => setIsDeletingBulk(true)}
+                            className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-red-100 transition-all active:scale-95 flex-1 sm:flex-initial"
+                        >
+                            <Trash2 size={20} />
+                            Delete All ({selectedRequests.length})
+                        </button>
+                    )}
+                    <button
+                        onClick={openCreateModal}
+                        className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-100 transition-all active:scale-95 flex-1 sm:flex-initial"
+                    >
+                        <Plus size={20} />
+                        Create Request
+                    </button>
+                </div>
             </div>
 
             <div className="mb-6 relative hidden sm:block">
@@ -260,6 +316,12 @@ const LeaveRequest = () => {
                                             </button>
                                         </>
                                     )}
+                                    <button
+                                        onClick={() => setIsDeleting(item)}
+                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             </div>
 
@@ -290,6 +352,16 @@ const LeaveRequest = () => {
                     <table className="w-full text-left min-w-[900px]">
                         <thead>
                             <tr className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-sm">
+                                {isAdmin && (
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedRequests.length === filteredData.length && filteredData.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                    </th>
+                                )}
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">Employee</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">Leave Type</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">Start Date</th>
@@ -304,6 +376,16 @@ const LeaveRequest = () => {
                             ) : filteredData.length > 0 ? (
                                 filteredData.map((item) => (
                                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        {isAdmin && (
+                                            <td className="px-6 py-5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedRequests.includes(item.id)}
+                                                    onChange={() => toggleSelectRequest(item.id)}
+                                                    className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                                />
+                                            </td>
+                                        )}
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -351,13 +433,20 @@ const LeaveRequest = () => {
                                                         </button>
                                                     </>
                                                 )}
+                                                <button
+                                                    onClick={() => setIsDeleting(item)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Request"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={isAdmin ? "7" : "6"} className="px-6 py-12 text-center text-slate-500">
                                         No leave requests found matching "{searchQuery}"
                                     </td>
                                 </tr>
@@ -525,6 +614,68 @@ const LeaveRequest = () => {
                                     className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-100 transition-all active:scale-95"
                                 >
                                     Yes, Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: DELETE CONFIRMATION */}
+            {isDeleting && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Trash2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">Delete Request?</h3>
+                            <p className="text-slate-500 mb-8 leading-relaxed">
+                                Are you sure you want to permanently delete this leave request from <span className="font-semibold text-slate-900">{isDeleting.employeeName || 'Unknown'}</span>? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsDeleting(null)}
+                                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(isDeleting.id)}
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-100 transition-all active:scale-95"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: BULK DELETE CONFIRMATION */}
+            {isDeletetingBulk && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Trash2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">Delete {selectedRequests.length} Request(s)?</h3>
+                            <p className="text-slate-500 mb-8 leading-relaxed">
+                                Are you sure you want to permanently delete {selectedRequests.length} selected leave request(s)? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsDeletingBulk(false)}
+                                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-100 transition-all active:scale-95"
+                                >
+                                    Delete All
                                 </button>
                             </div>
                         </div>

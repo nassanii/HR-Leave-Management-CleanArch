@@ -132,9 +132,10 @@ const Employees = () => {
 
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Employee Directory</h1>
-                <button onClick={() => navigate('/register')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-indigo-100">
-                    <UserPlus size={20} />
-                    Create Account
+                <button onClick={() => navigate('/register')} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 md:px-5 md:py-2.5 rounded-xl font-semibold flex items-center gap-2 shadow-lg shadow-indigo-100 text-sm md:text-base">
+                    <UserPlus size={18} className="md:w-5 md:h-5" />
+                    <span className="hidden md:inline">Create Account</span>
+                    <span className="md:hidden">Add</span>
                 </button>
             </div>
 

@@ -26,12 +26,11 @@ const AuthLayout = () => {
                     </Link>
 
                     <h2 className="text-5xl font-bold tracking-tight mb-6 leading-tight">
-                        Turn your ideas into <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">reality</span>.
+                        Streamline your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-purple-300">work life</span>.
                     </h2>
 
                     <p className="text-lg text-indigo-100 mb-12 leading-relaxed opacity-90">
-                        Join thousands of developers and designers building the future with Nexus Digital.
-                        Seamless workflow, powerful analytics, and beautiful design.
+                        The modern HR Leave Management System designed for efficiency. Request leave, track balances, and manage team schedules effortlessly.
                     </p>
 
                     {/* Testimonial Card */}
@@ -40,17 +39,15 @@ const AuthLayout = () => {
                             {[1, 2, 3, 4, 5].map(i => <Star key={i} size={16} fill="currentColor" />)}
                         </div>
                         <p className="text-indigo-50 italic mb-6">
-                            "This platform completely changed how we handle our design systems. It's intuitive, fast, and simply beautiful."
+                            "This portal makes managing leave requests incredibly simple. I can check my balance and submit requests in seconds."
                         </p>
                         <div className="flex items-center gap-4">
-                            <img
-                                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                                alt="User"
-                                className="h-10 w-10 rounded-full border-2 border-white/20"
-                            />
+                            <div className="h-10 w-10 flex items-center justify-center rounded-full bg-indigo-500 border-2 border-white/20 text-xs font-bold">
+                                EM
+                            </div>
                             <div>
-                                <h4 className="font-bold text-sm">Alex Morgan</h4>
-                                <p className="text-xs text-indigo-200">Senior Product Designer</p>
+                                <h4 className="font-bold text-sm">Employee Portal</h4>
+                                <p className="text-xs text-indigo-200">HR System v1.0</p>
                             </div>
                         </div>
                     </div>
@@ -65,7 +62,7 @@ const AuthLayout = () => {
                     <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
                         <Layers size={18} />
                     </div>
-                    <span className="font-bold text-xl text-gray-900">Nexus</span>
+                    <span className="font-bold text-xl text-gray-900">HR Portal</span>
                 </Link>
 
                 {/* Top Right Navigation (Switcher) */}

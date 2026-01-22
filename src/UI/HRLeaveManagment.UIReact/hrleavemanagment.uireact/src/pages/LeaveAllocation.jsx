@@ -187,10 +187,11 @@ const LeaveAllocation = () => {
                 {isAdmin && (
                     <button
                         onClick={openCreateModal}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm"
+                        className="flex items-center gap-2 px-3 py-2 md:px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm text-sm"
                     >
-                        <Plus size={20} />
-                        Allocate Leave
+                        <Plus size={18} className="md:w-5 md:h-5" />
+                        <span className="hidden md:inline">Allocate Leave</span>
+                        <span className="md:hidden">New</span>
                     </button>
                 )}
             </div>

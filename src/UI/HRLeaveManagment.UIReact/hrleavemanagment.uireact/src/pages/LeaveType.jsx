@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Plus,
@@ -13,9 +13,13 @@ import {
 } from 'lucide-react';
 
 import api from '../services/api';
+import AuthContext from '../context/AuthContext';
+import LeaveRequestService from '../services/LeaveRequestService';
 
 const LeaveType = () => {
+    const { user } = useContext(AuthContext);
     const [leaveTypes, setLeaveTypes] = useState([]);
+    const [leaveRequests, setLeaveRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [notification, setNotification] = useState(null);
@@ -27,15 +31,21 @@ const LeaveType = () => {
 
     const navigate = useNavigate();
 
+    const isAdmin = user?.role === 'Administrator';
+
     // Initialize Data
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await api.get('/LeaveType');
-                setLeaveTypes(response.data);
+                const [typesResponse, requestsData] = await Promise.all([
+                    api.get('/LeaveType'),
+                    LeaveRequestService.getAllLeaveRequests()
+                ]);
+                setLeaveTypes(typesResponse.data);
+                setLeaveRequests(requestsData);
             } catch (err) {
                 console.error(err);
-                showNotification('Error loading leave types', 'error');
+                showNotification('Error loading data', 'error');
             } finally {
                 setLoading(false);
             }
@@ -53,6 +63,43 @@ const LeaveType = () => {
             lt.name.toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [leaveTypes, searchQuery]);
+
+    // Calculate Statistics
+    const stats = useMemo(() => {
+        if (!leaveTypes.length) return { total: 0, avg: 0, mostUsed: '-' };
+
+        // 1. Total Categories
+        const total = leaveTypes.length;
+
+        // 2. Avg. Allowance
+        const totalDays = leaveTypes.reduce((sum, type) => sum + type.defaultDays, 0);
+        // Changed to Total Allowance (Sum) per user request
+
+        // 3. Most Used
+        if (!leaveRequests.length) return { total, avg, mostUsed: 'None' };
+
+        const typeCounts = leaveRequests.reduce((acc, req) => {
+            const typeId = req.leaveType?.id;
+            if (typeId) {
+                acc[typeId] = (acc[typeId] || 0) + 1;
+            }
+            return acc;
+        }, {});
+
+        const mostUsedTypeId = Object.keys(typeCounts).reduce((a, b) => typeCounts[a] > typeCounts[b] ? a : b, null);
+        const mostUsedType = leaveTypes.find(lt => lt.id.toString() === mostUsedTypeId);
+
+        const mostUsedName = mostUsedType ? mostUsedType.name : 'None';
+        const mostUsedPercentage = mostUsedTypeId ? Math.round((typeCounts[mostUsedTypeId] / leaveRequests.length) * 100) : 0;
+
+        return {
+            total,
+            avg: totalDays, // Using totalDays as the 'avg' property to keep downstream simple, or just rename.
+            mostUsed: mostUsedName,
+            mostUsedSub: mostUsedTypeId ? `${mostUsedPercentage}% of requests` : 'No data'
+        };
+    }, [leaveTypes, leaveRequests]);
+
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -114,13 +161,15 @@ const LeaveType = () => {
                     <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Leave Types</h1>
                     <p className="text-slate-500 mt-1">Define the available categories of leave for your organization.</p>
                 </div>
-                <button
-                    onClick={() => openModal()}
-                    className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-100 transition-all active:scale-95 w-full sm:w-auto"
-                >
-                    <Plus size={20} />
-                    Create New Type
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => openModal()}
+                        className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-indigo-100 transition-all active:scale-95 w-full sm:w-auto"
+                    >
+                        <Plus size={20} />
+                        Create New Type
+                    </button>
+                )}
             </div>
 
             <div className="mb-6 relative hidden sm:block">
@@ -136,9 +185,9 @@ const LeaveType = () => {
 
             {/* Stats Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-                <StatCard label="Total Categories" value={leaveTypes.length} subValue="+1 this month" />
-                <StatCard label="Avg. Allowance" value="28 Days" subValue="Standard policy" />
-                <StatCard label="Most Used" value="Annual Leave" subValue="82% of requests" />
+                <StatCard label="Total Categories" value={stats.total} subValue="Active types" />
+                <StatCard label="Total Allowance" value={`${stats.avg} Days`} subValue="Per employee/year" />
+                <StatCard label="Most Used" value={stats.mostUsed} subValue={stats.mostUsedSub || "Based on usage"} />
             </div>
 
             {/* Mobile Card List View */}
@@ -169,20 +218,22 @@ const LeaveType = () => {
                                         <p className="text-xs text-slate-500 mt-0.5">ID: {item.id}</p>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => openModal(item)}
-                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                    >
-                                        <Edit2 size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => setIsDeleting(item)}
-                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
+                                {isAdmin && (
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => openModal(item)}
+                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                        >
+                                            <Edit2 size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => setIsDeleting(item)}
+                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
@@ -217,7 +268,7 @@ const LeaveType = () => {
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">Leave Type Name</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">Default Days</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider backdrop-blur-sm bg-slate-50/90">Last Modified</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right backdrop-blur-sm bg-slate-50/90">Actions</th>
+                                {isAdmin && <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right backdrop-blur-sm bg-slate-50/90">Actions</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -242,22 +293,24 @@ const LeaveType = () => {
                                         <td className="px-6 py-5 text-sm text-slate-500">
                                             {item.dateModified ? new Date(item.dateModified).toLocaleDateString() : '-'}
                                         </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => openModal(item)}
-                                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                                >
-                                                    <Edit2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => setIsDeleting(item)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
+                                        {isAdmin && (
+                                            <td className="px-6 py-5 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => openModal(item)}
+                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsDeleting(item)}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             ) : (

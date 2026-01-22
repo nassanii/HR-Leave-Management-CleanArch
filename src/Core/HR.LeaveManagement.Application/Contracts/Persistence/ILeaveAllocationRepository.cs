@@ -10,4 +10,5 @@ public interface ILeaveAllocationRepository : IGenericRepository<LeaveAllocation
     public Task<bool> AllocationExists(string employeeId, int leaveTypeId, int period);
     public Task AddAlocations(List<LeaveAllocation> allocations);
     public Task<LeaveAllocation?> GetUserAlocation(string employeeId, int leaveTypeId);
+    public Task DeleteAllocations(string employeeId);
 }
