@@ -12,4 +12,5 @@ public class LeaveRequestListDTO
     public bool? Approved { get; set; }
     public string RequestingEmployeeId { get; set; } = string.Empty;
     public string EmployeeName { get; set; } = string.Empty;
+    public string? RequestComments { get; set; }
 }

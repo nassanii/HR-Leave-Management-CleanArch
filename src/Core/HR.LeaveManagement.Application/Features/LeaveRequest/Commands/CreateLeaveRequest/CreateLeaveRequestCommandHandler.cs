@@ -81,6 +81,7 @@ public class CreateLeaveRequestCommandHandler : IRequestHandler<CreateLeaveReque
         // Postgres requires UTC
         leaveRequest.StartDate = DateTime.SpecifyKind(leaveRequest.StartDate, DateTimeKind.Utc);
         leaveRequest.EndDate = DateTime.SpecifyKind(leaveRequest.EndDate, DateTimeKind.Utc);
+        leaveRequest.DateRequested = DateTime.UtcNow;
 
         leaveRequest.RequestingEmployeeId = employeeId;
         _logger.LogInformation($"Creating Leave Request for {requestedDays} days. Employee: {employeeId}, Available: {allocation.NumberOFdayes} days");

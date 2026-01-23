@@ -76,7 +76,7 @@ const LeaveType = () => {
         // Changed to Total Allowance (Sum) per user request
 
         // 3. Most Used
-        if (!leaveRequests.length) return { total, avg, mostUsed: 'None' };
+        if (!leaveRequests.length) return { total, avg: totalDays, mostUsed: 'None' };
 
         const typeCounts = leaveRequests.reduce((acc, req) => {
             const typeId = req.leaveType?.id;
